@@ -10,9 +10,6 @@ import os
 bot_token = os.getenv('BOT_TOKEN')
 chat_id = os.getenv('CHAT_ID')
 
-# Configura tu bot de Telegram
-#bot_token = '7678601013:AAEyspczh_FLXE13A-2upBD6HngO0acAFXE'
-#chat_id = '5703458157'
 if not bot_token or not chat_id:
     raise ValueError("❌ BOT_TOKEN o CHAT_ID no están definidos en las variables de entorno.")
 
