@@ -5,7 +5,7 @@ from telegram import Bot
 import threading
 from flask import Flask
 
-# Configura tu bot de Telegram
+# Configura tu bot de Telegram oficial
 bot_token = '8182687940:AAEgkQzqWTV2WH7AQzxNhorO7Bfq6LNsSAI'
 chat_id = '5703458157'
 
