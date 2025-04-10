@@ -6,12 +6,12 @@ import threading
 from flask import Flask
 
 # Configura tu bot de Telegram
-#bot_token = '8182687940:AAEgkQzqWTV2WH7AQzxNhorO7Bfq6LNsSAI'
-#chat_id = '5703458157'
+bot_token = '8182687940:AAEgkQzqWTV2WH7AQzxNhorO7Bfq6LNsSAI'
+chat_id = '5703458157'
 
 # Configura tu bot de Telegram
-bot_token = '7678601013:AAEyspczh_FLXE13A-2upBD6HngO0acAFXE'
-chat_id = '5703458157'
+#bot_token = '7678601013:AAEyspczh_FLXE13A-2upBD6HngO0acAFXE'
+#chat_id = '5703458157'
 
 bot = Bot(token=bot_token)
 
