@@ -19,7 +19,7 @@ bot = Bot(token=bot_token)
 URL = "https://larepublica.pe/espectaculos"
 
 # Lista para guardar los títulos ya enviados
-enviados = set()
+enviados: set[str] = set() 
 
 def obtener_noticias():
     """Obtiene la lista de noticias principales (corregido final)."""
@@ -78,7 +78,7 @@ def obtener_noticias():
                 print(f"✅ Noticia agregada: {titulo}")
 
         print(f"🟢 Total de noticias agregadas: {len(noticias)}")
-        return noticias
+        return noticias[::-1]
 
     except Exception as e:
         print(f"❌ Error obteniendo noticias: {e}")
@@ -129,6 +129,7 @@ async def enviar_noticias():
 
         for titulo, enlace, imagen_preview in noticias:
             if titulo not in enviados:
+                enviados.add(enlace)  
                 try:
                     texto_completo, imagen_detalle = obtener_detalle_noticia(enlace)
 
