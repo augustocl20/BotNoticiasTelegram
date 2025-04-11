@@ -128,8 +128,8 @@ async def enviar_noticias():
                 print(f"Error enviando aviso de noticias vacías: {e}")
 
         for titulo, enlace, imagen_preview in noticias:
-            if titulo not in enviados:
-                enviados.add(enlace)  
+            # ✅ usa la URL como clave de unicidad
+            if enlace not in enviados:
                 try:
                     texto_completo, imagen_detalle = obtener_detalle_noticia(enlace)
 
@@ -138,19 +138,21 @@ async def enviar_noticias():
 
                     mensaje = f"📰 {titulo}\n\n{texto_completo}\n\n🔗 {enlace}"
 
-                    imagen_a_enviar = imagen_detalle if imagen_detalle else imagen_preview
-
+                    imagen_a_enviar = imagen_detalle or imagen_preview
                     if imagen_a_enviar and imagen_a_enviar.startswith("http"):
-                        await bot.send_photo(chat_id=chat_id, photo=imagen_a_enviar, caption=mensaje[:1024])
-                        print(f"✅ Enviada noticia con imagen: {titulo}")
+                        await bot.send_photo(chat_id=chat_id,
+                                            photo=imagen_a_enviar,
+                                            caption=mensaje[:1024])
                     else:
-                        await bot.send_message(chat_id=chat_id, text=mensaje[:4096])
-                        print(f"✅ Enviada noticia sin imagen: {titulo}")
+                        await bot.send_message(chat_id=chat_id,
+                                            text=mensaje[:4096])
 
-                    enviados.add(titulo)
+                    # ✅ guarda SOLO la URL; no hace falta añadir el título
+                    enviados.add(enlace)
 
                 except Exception as e:
                     print(f"Error enviando noticia: {e}")
+
 
         print("⏳ Esperando 10 minutos para la siguiente revisión...")
         await asyncio.sleep(600)
