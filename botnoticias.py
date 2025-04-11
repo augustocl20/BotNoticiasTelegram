@@ -5,6 +5,7 @@ from telegram import Bot
 import threading
 from flask import Flask
 import os
+from urllib.parse import urlsplit, urlunsplit
 
 # Configura tu bot de Telegram oficial
 bot_token = os.getenv('BOT_TOKEN')
@@ -122,45 +123,48 @@ def obtener_detalle_noticia(url: str):
     return texto, imagen
 
 
-async def enviar_noticias():
-    """Revisa y envía noticias nuevas."""
-    while True:
-        noticias = obtener_noticias()
+def canon(url: str) -> str:
+    """Devuelve la URL sin query ni fragmento: https://ejemplo.com/pag → misma clave siempre."""
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
-        if len(noticias) == 0:
-            try:
-                await bot.send_message(chat_id=chat_id, text="⚠️ No se encontraron noticias en La República.")
-                print("⚠️ Aviso enviado: No se encontraron noticias.")
-            except Exception as e:
-                print(f"Error enviando aviso de noticias vacías: {e}")
+enviados: set[str] = set()          # vive en RAM; suficiente mientras el contenedor no se reinicie
+
+
+async def enviar_noticias():
+    await bot.send_message(chat_id=chat_id,
+                           text="✅ Bot de noticias iniciado y escuchando novedades…")
+
+    while True:
+        noticias = obtener_noticias()[::-1]      # orden: de la más reciente a la más antigua
 
         for titulo, enlace, imagen_preview in noticias:
-            # ✅ usa la URL como clave de unicidad
-            if enlace not in enviados:
-                try:
-                    texto_completo, imagen_detalle = obtener_detalle_noticia(enlace)
+            clave = canon(enlace)                # ← clave única
+            if clave in enviados:
+                continue                         # ya la mandaste en este proceso
 
-                    if not texto_completo:
-                        texto_completo = "No se pudo extraer el contenido completo."
+            # ------------------ envía la noticia ------------------
+            try:
+                texto_completo, imagen_detalle = obtener_detalle_noticia(enlace)
+                if not texto_completo:
+                    texto_completo = "No se pudo extraer el contenido completo."
 
-                    mensaje = f"📰 {titulo}\n\n{texto_completo}\n\n🔗 {enlace}"
+                mensaje = f"📰 {titulo}\n\n{texto_completo}\n\n🔗 {enlace}"
+                imagen = imagen_detalle or imagen_preview
 
-                    imagen_a_enviar = imagen_detalle or imagen_preview
-                    if imagen_a_enviar and imagen_a_enviar.startswith("http"):
-                        await bot.send_photo(chat_id=chat_id,
-                                            photo=imagen_a_enviar,
-                                            caption=mensaje[:1024])
-                    else:
-                        await bot.send_message(chat_id=chat_id,
-                                            text=mensaje[:4096])
+                if imagen and imagen.startswith("http"):
+                    await bot.send_photo(chat_id=chat_id,
+                                         photo=imagen,
+                                         caption=mensaje[:1024])
+                else:
+                    await bot.send_message(chat_id=chat_id,
+                                           text=mensaje[:4096])
 
-                    enviados.add(enlace)
+                enviados.add(clave)              # ← marca como enviada SOLO esa URL canónica
+            except Exception as e:
+                print(f"Error enviando noticia: {e}")
 
-                except Exception as e:
-                    print(f"Error enviando noticia: {e}")
-
-
-        print("⏳ Esperando 10 minutos para la siguiente revisión...")
+        print("⏳ Esperando 10 minutos para la siguiente revisión…")
         await asyncio.sleep(600)
 
 # Servidor Flask para mantener Replit vivo
