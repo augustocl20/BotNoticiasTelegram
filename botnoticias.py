@@ -86,34 +86,41 @@ def obtener_noticias():
 
 
 
-def obtener_detalle_noticia(url):
-    """Ingresa al detalle de la noticia y extrae texto e imagen."""
+def obtener_detalle_noticia(url: str):
+    """Devuelve (texto, imagen) del cuerpo de la noticia."""
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        )
+    }
+    # 1) Probamos la página AMP, que siempre trae el artículo completo
+    amp_url = f"{url}?outputType=amp"
+
     try:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        resp = requests.get(amp_url, headers=headers, timeout=10)
+        resp.raise_for_status()
+    except requests.HTTPError:
+        # Fallback a la URL original por si la AMP falla
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
 
-        # Extraer contenido principal
-        contenido = []
-        for parrafo in soup.find_all('p'):
-            texto = parrafo.get_text(strip=True)
-            if texto:
-                contenido.append(texto)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-        texto_completo = "\n\n".join(contenido)
+    # El cuerpo de la nota en AMP está dentro de <div class="paragraph"> o simplemente <p>
+    parrafos = [p.get_text(strip=True) for p in soup.find_all("p") if p.get_text(strip=True)]
+    texto = "\n\n".join(parrafos)
 
-        # Buscar imagen principal del dominio correcto
-        imagen = None
-        for img_tag in soup.find_all('img'):
-            src = img_tag.get('src')
-            if src and src.startswith('https://imgmedia.larepublica.pe/'):
-                imagen = src
-                break
+    # Primera imagen válida
+    imagen = None
+    for img in soup.find_all("img"):
+        src = img.get("src", "")
+        if src.startswith("https://imgmedia.larepublica.pe/"):
+            imagen = src
+            break
 
-        return texto_completo, imagen
+    return texto, imagen
 
-    except Exception as e:
-        print(f"Error al obtener detalle de noticia: {e}")
-        return "", None
 
 async def enviar_noticias():
     """Revisa y envía noticias nuevas."""
@@ -147,7 +154,6 @@ async def enviar_noticias():
                         await bot.send_message(chat_id=chat_id,
                                             text=mensaje[:4096])
 
-                    # ✅ guarda SOLO la URL; no hace falta añadir el título
                     enviados.add(enlace)
 
                 except Exception as e:
