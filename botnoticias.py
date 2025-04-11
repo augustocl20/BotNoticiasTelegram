@@ -136,21 +136,19 @@ async def enviar_noticias():
                            text="✅ Bot de noticias iniciado y escuchando novedades…")
 
     while True:
-        noticias = obtener_noticias()[::-1]      # orden: de la más reciente a la más antigua
+        noticias = obtener_noticias()[::-1]
+        enviadas_este_ciclo = 0       # ← contador
 
-        for titulo, enlace, imagen_preview in noticias:
-            clave = canon(enlace)                # ← clave única
+        for titulo, enlace, img_prev in noticias:
+            clave = canon(enlace)
             if clave in enviados:
-                continue                         # ya la mandaste en este proceso
+                continue
 
-            # ------------------ envía la noticia ------------------
+            # ---------- envío ----------
             try:
-                texto_completo, imagen_detalle = obtener_detalle_noticia(enlace)
-                if not texto_completo:
-                    texto_completo = "No se pudo extraer el contenido completo."
-
-                mensaje = f"📰 {titulo}\n\n{texto_completo}\n\n🔗 {enlace}"
-                imagen = imagen_detalle or imagen_preview
+                texto, img_detalle = obtener_detalle_noticia(enlace)
+                mensaje = f"📰 {titulo}\n\n{texto}\n\n🔗 {enlace}"
+                imagen = img_detalle or img_prev
 
                 if imagen and imagen.startswith("http"):
                     await bot.send_photo(chat_id=chat_id,
@@ -160,12 +158,19 @@ async def enviar_noticias():
                     await bot.send_message(chat_id=chat_id,
                                            text=mensaje[:4096])
 
-                enviados.add(clave)              # ← marca como enviada SOLO esa URL canónica
+                enviados.add(clave)
+                enviadas_este_ciclo += 1          # ← incrementa
             except Exception as e:
                 print(f"Error enviando noticia: {e}")
 
-        print("⏳ Esperando 10 minutos para la siguiente revisión…")
+        # ---------- aviso si no se envió nada ----------
+        if enviadas_este_ciclo == 0:
+            await bot.send_message(chat_id=chat_id,
+                                   text="⚠️ Sin noticias nuevas en La República.")
+
+        print("⏳ Esperando 10 minutos…")
         await asyncio.sleep(600)
+
 
 # Servidor Flask para mantener Replit vivo
 app = Flask('')
