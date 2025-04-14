@@ -8,6 +8,8 @@ from flask import Flask
 import os
 from urllib.parse import urlsplit, urlunsplit
 from datetime import datetime
+from telegram.request import AsyncHTTPXRequest
+
 
 # Configuración
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -17,7 +19,8 @@ URL = "https://larepublica.pe/espectaculos"
 if not BOT_TOKEN or not CHAT_ID:
     raise ValueError("❌ Faltan variables de entorno BOT_TOKEN o CHAT_ID")
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN, request=AsyncHTTPXRequest())
+
 enviados = set()
 
 # Helper para URLs canónicas
