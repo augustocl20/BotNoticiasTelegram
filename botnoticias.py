@@ -75,9 +75,11 @@ def obtener_noticias():
 # Obtener detalle de noticia
 async def obtener_detalle_noticia(url: str):
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        }
         amp_url = f"{url}?outputType=amp"
-        
+
         try:
             resp = requests.get(amp_url, headers=headers, timeout=10)
             resp.raise_for_status()
@@ -86,22 +88,31 @@ async def obtener_detalle_noticia(url: str):
             resp.raise_for_status()
 
         soup = BeautifulSoup(resp.text, "html.parser")
+
+        # 📄 Extraer texto
         parrafos = [p.get_text(strip=True) for p in soup.find_all("p") if p.get_text(strip=True)]
         texto = "\n\n".join(parrafos[:5])  # Limitar a 5 párrafos
-        
-        # Buscar imagen principal
+
+        # 🖼️ Extraer la imagen principal desde OpenGraph
         imagen = None
-        for img in soup.find_all("img"):
-            src = img.get("src", "")
-            if src.startswith(("https://imgmedia.larepublica.pe/", "http://imgmedia.larepublica.pe/")):
-                imagen = src
-                break
+        meta_og = soup.find("meta", property="og:image")
+        if meta_og and meta_og.get("content"):
+            imagen = meta_og["content"]
+
+        # Si por algún motivo no hay og:image, buscar imágenes manualmente
+        if not imagen:
+            for img in soup.find_all("img"):
+                src = img.get("src", "")
+                if src.startswith(("https://imgmedia.larepublica.pe/", "http://imgmedia.larepublica.pe/")) and "uploads" in src:
+                    imagen = src
+                    break
 
         return texto, imagen
 
     except Exception as e:
         print(f"❌ Error en detalle de {url}: {e}")
         return None, None
+
 
 # Enviar noticias
 async def enviar_noticias():
