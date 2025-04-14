@@ -1,5 +1,4 @@
---upgrade
-python-telegram-bot==20.7
+python-telegram-bot[aiohttp]==20.7
 aiohttp==3.9.*   
 requests==2.*
 beautifulsoup4==4.*
